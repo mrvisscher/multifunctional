@@ -1,51 +1,67 @@
 from typing import Optional, Union
+from uuid import uuid4
+from copy import deepcopy
 
-from bw2data import databases, get_node, labels
-from bw2data.backends.proxies import Activity
+from bw2data import databases, labels
+from bw2data.backends.proxies import Activity, Exchange
 from loguru import logger
 
-from .edge_classes import ReadOnlyExchanges
+from .edge_classes import ReadOnlyExchanges, ReadOnlyExchange
 from .errors import NoAllocationNeeded
-from .utils import update_datasets_from_allocation_results
+from .utils import update_products_from_allocation_results
 
 
-class BaseMultifunctionalNode(Activity):
-    def functional_edges(self):
-        return (edge for edge in self.exchanges() if edge.get("functional"))
+class Process(Activity):
+    def products(self):
+        return [exc.output for exc in self.upstream(kinds=["production"])]
 
-    def nonfunctional_edges(self):
-        return (edge for edge in self.exchanges() if not edge.get("functional"))
+    def multifunctional(self) -> bool:
+        return len(self.products()) > 1
 
-    @property
-    def has_multiple_functional_edges(self):
-        return len(list(self.functional_edges())) > 1
-
-
-class MaybeMultifunctionalProcess(BaseMultifunctionalNode):
-    """Default node class for nodes in `MultifunctionalDatabase`.
-
-    Sets flag on save if multifunctional."""
-
-    def save(self):
-        if self.has_multiple_functional_edges:
-            self._data["type"] = "multifunctional"
-            logger.info(
-                "Process {p} is multifunctional - please reload with `get_node(id={i})`",
-                p=repr(self),
-                i=self.id,
-            )
+    def valid(self, why=False):
+        if super().valid():
+            errors = []
         else:
-            self._data["type"] = "process"
-        super().save()
+            valid, errors = super().valid(True)
 
+        # should have at least one product associated with it
+        products = self.products()
+        if not len(products) > 0:
+            errors.append("Process should have at least one product associated with it")
 
-class MultifunctionalProcess(BaseMultifunctionalNode):
-    def __str__(self):
-        base = super().__str__()
-        return f"Multifunctional: {base}"
+        if self in products:
+            errors.append("Process cannot produce itself, associate a product with this process")
+
+        if why:
+            return len(errors) == 0, errors
+        else:
+            return len(errors) == 0
+
+    def new_product(self, name, code=None, amount=1, **kwargs):
+        attributes: dict = deepcopy(self._data)
+
+        attributes.update(kwargs)
+        attributes["name"] = name
+        attributes["code"] = code or uuid4().hex
+        attributes["type"] = "product"
+
+        product = ReadOnlyProduct(**attributes)
+        product.save()
+
+        exc = Exchange(
+            input=self.key,
+            output=product.key,
+            type="production",
+            amount=amount
+        )
+        exc.save()
+
+        self.allocate()
+
+        return product
 
     def allocate(
-        self, strategy_label: Optional[str] = None
+            self, strategy_label: Optional[str] = None
     ) -> Union[None, NoAllocationNeeded]:
         from . import allocation_strategies
 
@@ -66,8 +82,6 @@ class MultifunctionalProcess(BaseMultifunctionalNode):
 
         if self.get("skip_allocation"):
             return NoAllocationNeeded
-        elif not self.has_multiple_functional_edges:
-            return NoAllocationNeeded
 
         logger.debug(
             "Allocating {p} (id: {i}) with strategy {s}",
@@ -77,20 +91,10 @@ class MultifunctionalProcess(BaseMultifunctionalNode):
         )
 
         allocated_data = allocation_strategies[strategy_label](self)
-        update_datasets_from_allocation_results(allocated_data)
-
-    def rp_exchange(self):
-        raise ValueError("Multifunctional processes have no reference product")
-
-    def save(self):
-        if self.has_multiple_functional_edges:
-            self["type"] = "multifunctional"
-        else:
-            self["type"] = "process"
-        super().save()
+        update_products_from_allocation_results(allocated_data)
 
 
-class ReadOnlyProcessWithReferenceProduct(BaseMultifunctionalNode):
+class ReadOnlyProduct(Activity):
     def __str__(self):
         base = super().__str__()
         return f"Read-only allocated process: {base}"
@@ -102,14 +106,8 @@ class ReadOnlyProcessWithReferenceProduct(BaseMultifunctionalNode):
 
     @property
     def parent(self):
-        """Return the `MultifunctionalProcess` which generated this node object"""
-        return get_node(id=self["multifunctional_parent_id"])
-
-    def save(self):
-        self._data["type"] = "readonly_process"
-        if not self.get("multifunctional_parent_id"):
-            raise ValueError("Must specify `multifunctional_parent_id`")
-        super().save()
+        """Return the `Process` which supplies the production exchange to this product"""
+        return self.production()[0].input
 
     def copy(self, *args, **kwargs):
         raise NotImplementedError(
@@ -145,3 +143,11 @@ class ReadOnlyProcessWithReferenceProduct(BaseMultifunctionalNode):
 
     def upstream(self, kinds=labels.technosphere_negative_edge_types):
         return super().upstream(kinds=kinds, exchanges_class=ReadOnlyExchanges)
+
+
+class ProcessProduct(Activity):
+    """
+    Node that is both a process and a product, aka Process with a reference product, aka. a Chimaera.
+
+    These cannot be multifunctional, but they can be converted to a Process-Product link
+    """

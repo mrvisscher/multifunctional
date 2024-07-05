@@ -54,12 +54,8 @@ class MultifunctionalDatabase(SQLiteBackend):
     backend = "multifunctional"
     node_class = multifunctional_dispatcher_method
 
-    def write(self, data: dict, *args, **kwargs) -> None:
-        data = add_exchange_input_if_missing(data)
-        super().write(data, *args, **kwargs)
-
     def process(self, csv: bool = False) -> None:
         for node in self:
-            if node.has_multiple_functional_edges:
+            if node["type"] == "process":
                 node.allocate()
         super().process(csv=csv)

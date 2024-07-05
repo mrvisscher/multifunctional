@@ -1,11 +1,10 @@
 __all__ = (
     "__version__",
     "allocation_strategies",
-    "MaybeMultifunctionalProcess",
     "MultifunctionalDatabase",
-    "MultifunctionalProcess",
-    "ReadOnlyProcessWithReferenceProduct",
     "property_allocation",
+    "Process",
+    "ReadOnlyProduct"
 )
 
 __version__ = "0.2"
@@ -19,9 +18,8 @@ from bw2data.subclass_mapping import (
 from .allocation import allocation_strategies, property_allocation
 from .database import MultifunctionalDatabase
 from .node_classes import (
-    MaybeMultifunctionalProcess,
-    MultifunctionalProcess,
-    ReadOnlyProcessWithReferenceProduct,
+    Process,
+    ReadOnlyProduct,
 )
 from .node_dispatch import multifunctional_node_dispatcher
 
