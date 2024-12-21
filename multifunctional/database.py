@@ -3,14 +3,14 @@ from typing import Optional
 from bw2data.backends import SQLiteBackend
 from bw2data.backends.schema import ActivityDataset
 
-from .node_dispatch import multifunctional_node_dispatcher
+from .node_dispatch import functional_node_dispatcher
 from .utils import add_exchange_input_if_missing, label_multifunctional_nodes
 
 
-def multifunctional_dispatcher_method(
-    db: "MultifunctionalDatabase", document: Optional[ActivityDataset] = None
+def functional_dispatcher_method(
+    db: "FunctionalSQLiteDatabase", document: Optional[ActivityDataset] = None
 ):
-    return multifunctional_node_dispatcher(document)
+    return functional_node_dispatcher(document)
 
 
 SIMAPRO_ATTRIBUTES = (
@@ -22,7 +22,7 @@ SIMAPRO_ATTRIBUTES = (
 )
 
 
-class MultifunctionalDatabase(SQLiteBackend):
+class FunctionalSQLiteDatabase(SQLiteBackend):
     """A database which includes multifunctional processes (i.e. processes which have more than one
     functional input and/or output edge). Such multifunctional processes normally break square
     matrix construction, so need to be resolved in some way.
@@ -54,8 +54,8 @@ class MultifunctionalDatabase(SQLiteBackend):
 
     """
 
-    backend = "multifunctional"
-    node_class = multifunctional_dispatcher_method
+    backend = "functional_sqlite"
+    node_class = functional_dispatcher_method
 
     def write(self, data: dict, **kwargs) -> None:
         data = label_multifunctional_nodes(add_exchange_input_if_missing(data))
