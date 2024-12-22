@@ -7,10 +7,11 @@ __all__ = (
     "check_property_for_process_allocation",
     "generic_allocation",
     "list_available_properties",
-    "MaybeMultifunctionalProcess",
+    "Process",
+    "Function",
     "FunctionalSQLiteDatabase",
     "property_allocation",
-    "ReadOnlyProcessWithReferenceProduct",
+    "ReadOnlyProcess",
 )
 
 __version__ = "1.0"
@@ -33,7 +34,7 @@ from .custom_allocation import (
     list_available_properties,
 )
 from .database import FunctionalSQLiteDatabase
-from .node_classes import MaybeMultifunctionalProcess, ReadOnlyProcessWithReferenceProduct
+from .node_classes import Process, Function, ReadOnlyProcess
 from .node_dispatch import functional_node_dispatcher
 from .utils import allocation_before_writing
 

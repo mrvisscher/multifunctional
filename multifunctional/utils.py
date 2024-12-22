@@ -64,7 +64,7 @@ def add_exchange_input_if_missing(data: dict) -> dict:
 
 def update_datasets_from_allocation_results(data: List[dict]) -> None:
     """Given data from allocation, create, update, or delete datasets as needed from `data`."""
-    from .node_classes import ReadOnlyProcessWithReferenceProduct
+    from .node_classes import ReadOnlyProcess
 
     for ds in data:
         exchanges = ds.pop("exchanges")
@@ -72,7 +72,7 @@ def update_datasets_from_allocation_results(data: List[dict]) -> None:
             node = get_node(database=ds["database"], code=ds["code"])
             node._data.update(**ds)
         except UnknownObject:
-            node = ReadOnlyProcessWithReferenceProduct(**ds)
+            node = ReadOnlyProcess(**ds)
 
         # .save() calls purge_expired_linked_readonly_processes(), which will delete existing
         # read-only processes (we have a new allocation and therefore a new mf_allocation_run_uuid)
