@@ -162,61 +162,10 @@ def set_correct_process_type(dataset: Node) -> Node:
 
 
 def purge_expired_linked_readonly_processes(dataset: Node) -> None:
-    from .database import MultifunctionalDatabase
+    from .database import FunctionalSQLiteDatabase
+    # Obsolete readonly processes
+    for ds in FunctionalSQLiteDatabase(dataset["database"]):
+        if ds["type"] in ("readonly_process",) and ds.get("full_process_key") == dataset.key:
+            ds.delete()
 
-    if not dataset.get("mf_was_once_allocated"):
-        return
 
-    if dataset["type"] == "multifunctional":
-        # Can have some readonly allocated processes which refer to non-functional edges
-        for ds in MultifunctionalDatabase(dataset["database"]):
-            if (
-                ds["type"] in ("readonly_process",)
-                and ds.get("mf_parent_key") == dataset.key
-                and ds["mf_allocation_run_uuid"] != dataset["mf_allocation_run_uuid"]
-            ):
-                ds.delete()
-
-        for exc in dataset.exchanges():
-            try:
-                exc.input
-            except UnknownObject:
-                exc.input = dataset
-                exc.save()
-                logger.debug(
-                    "Edge to deleted readonly process redirected to parent process: %s",
-                    exc,
-                )
-
-    else:
-        # Process or chimaera process with one functional edge
-        # Make sure that single functional edge is not referring to obsolete readonly process
-        functional_edges = [exc for exc in dataset.exchanges() if exc.get("functional")]
-        if not len(functional_edges) < 2:
-            raise ValueError(
-                f"Process marked monofunctional with type {dataset['type']} but has {len(functional_edges)} functional edges"
-            )
-        edge = functional_edges[0]
-        if edge.input["type"] in (
-            "readonly_process",
-        ):  # TBD https://github.com/brightway-lca/multifunctional/issues/23
-            # This node should be deleted; have to change to chimaera process with self-input
-            logger.debug(
-                "Edge to expired readonly process %s redirected to parent process %s",
-                edge.input,
-                dataset,
-            )
-            edge.input = dataset
-            edge.save()
-            if dataset["type"] != labels.chimaera_node_default:
-                logger.debug(
-                    "Change node type to chimaera: %s (%s)",
-                    dataset,
-                    dataset.id,
-                )
-                dataset["type"] = labels.chimaera_node_default
-
-        # Obsolete readonly processes
-        for ds in MultifunctionalDatabase(dataset["database"]):
-            if ds["type"] in ("readonly_process",) and ds.get("mf_parent_key") == dataset.key:
-                ds.delete()
