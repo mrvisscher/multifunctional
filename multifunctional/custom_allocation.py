@@ -235,7 +235,7 @@ def add_custom_property_allocation_to_project(
 
     allocation_strategies[property_label] = property_allocation(
         property_label=property_label,
-        normalize_by_production_amount=normalize_by_production_amount,
+        normalize_by_amount=normalize_by_production_amount,
     )
 
     if "multifunctional.custom_allocations" not in projects.dataset.data:
@@ -259,4 +259,4 @@ def update_allocation_strategies_on_project_change(
         allocation_strategies[key] = property_allocation(**value)
 
 
-signal("bw2data.project_changed").connect(update_allocation_strategies_on_project_change)
+#signal("bw2data.project_changed").connect(update_allocation_strategies_on_project_change)
