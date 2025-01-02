@@ -8,8 +8,8 @@ from multifunctional import (
     FunctionalSQLiteDatabase,
     add_custom_property_allocation_to_project,
     allocation_strategies,
-    check_property_for_allocation,
-    check_property_for_process_allocation,
+    database_property_errors,
+    process_property_errors,
     list_available_properties,
 )
 from multifunctional.custom_allocation import DEFAULT_ALLOCATIONS, MessageType
@@ -36,74 +36,49 @@ def test_allocation_strategies_changing_project():
 def test_check_property_for_allocation_success(basic):
     basic.metadata["default_allocation"] = "price"
     basic.process()
-    assert check_property_for_allocation("basic", "price")
+    assert not database_property_errors("basic", "price")
 
 
 def test_check_property_for_allocation_failure(errors):
-    result = check_property_for_allocation("errors", "mass")
+    result = database_property_errors("errors", "mass")
     expected = {
         (
             logging.WARNING,
-            MessageType.MISSING_PRODUCT_PROPERTY,
+            MessageType.MISSING_FUNCTION_PROPERTY,
             get_node(code="a").id,
             get_node(code="1").id,
         ),
         (
             logging.CRITICAL,
-            MessageType.NONNUMERIC_PRODUCT_PROPERTY,
+            MessageType.NONNUMERIC_FUNCTION_PROPERTY,
             get_node(code="b").id,
             get_node(code="1").id,
-        ),
-        (
-            logging.CRITICAL,
-            MessageType.NONNUMERIC_EDGE_PROPERTY,
-            get_node(code="first one here").id,
-            get_node(code="1").id,
-        ),
-        (
-            logging.WARNING,
-            MessageType.MISSING_EDGE_PROPERTY,
-            get_node(code="second one here").id,
-            get_node(code="1").id,
-        ),
+        )
     }
-    assert len(result) == 4
+    assert len(result) == 2
     for err in result:
-        assert (err.level, err.message_type, err.product_id, err.process_id) in expected
+        assert (err.level, err.message_type, err.function_id, err.process_id) in expected
 
 
 def test_check_process_property_for_allocation_failure(errors):
-    msg_list = []
-    check_property_for_process_allocation(get_node(code="1"), "mass", msg_list)
+    msg_list = process_property_errors(get_node(code="1"), "mass")
     expected = {
         (
             logging.WARNING,
-            MessageType.MISSING_PRODUCT_PROPERTY,
+            MessageType.MISSING_FUNCTION_PROPERTY,
             get_node(code="a").id,
             get_node(code="1").id,
         ),
         (
             logging.CRITICAL,
-            MessageType.NONNUMERIC_PRODUCT_PROPERTY,
+            MessageType.NONNUMERIC_FUNCTION_PROPERTY,
             get_node(code="b").id,
             get_node(code="1").id,
-        ),
-        (
-            logging.CRITICAL,
-            MessageType.NONNUMERIC_EDGE_PROPERTY,
-            get_node(code="first one here").id,
-            get_node(code="1").id,
-        ),
-        (
-            logging.WARNING,
-            MessageType.MISSING_EDGE_PROPERTY,
-            get_node(code="second one here").id,
-            get_node(code="1").id,
-        ),
+        )
     }
-    assert len(msg_list) == 4
+    assert len(msg_list) == 2
     for err in msg_list:
-        assert (err.level, err.message_type, err.product_id, err.process_id) in expected
+        assert (err.level, err.message_type, err.function_id, err.process_id) in expected
 
 
 def test_check_process_property_for_allocation_failure_process_type(errors):

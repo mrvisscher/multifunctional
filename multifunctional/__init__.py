@@ -3,8 +3,8 @@ __all__ = (
     "add_custom_property_allocation_to_project",
     "allocation_before_writing",
     "allocation_strategies",
-    "check_property_for_allocation",
-    "check_property_for_process_allocation",
+    "database_property_errors",
+    "process_property_errors",
     "generic_allocation",
     "list_available_properties",
     "Process",
@@ -29,8 +29,8 @@ from bw2data.subclass_mapping import DATABASE_BACKEND_MAPPING, NODE_PROCESS_CLAS
 from .allocation import allocation_strategies, generic_allocation, property_allocation
 from .custom_allocation import (
     add_custom_property_allocation_to_project,
-    check_property_for_allocation,
-    check_property_for_process_allocation,
+    database_property_errors,
+    process_property_errors,
     list_available_properties,
 )
 from .database import FunctionalSQLiteDatabase
