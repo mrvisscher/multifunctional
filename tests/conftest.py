@@ -10,7 +10,7 @@ from fixtures.name_change import DATA as NAME_CHANGE_DATA
 from fixtures.product_properties import DATA as PP_DATA
 from fixtures.products import DATA as PRODUCT_DATA
 
-from multifunctional import MultifunctionalDatabase, allocation_before_writing
+from multifunctional import FunctionalSQLiteDatabase, allocation_before_writing
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def basic_data():
 @pytest.fixture
 @bw2test
 def basic():
-    db = MultifunctionalDatabase("basic")
+    db = FunctionalSQLiteDatabase("basic")
     db.write(deepcopy(BASIC_DATA), process=False)
     db.metadata["dirty"] = True
     return db
@@ -30,7 +30,7 @@ def basic():
 @pytest.fixture
 @bw2test
 def name_change():
-    db = MultifunctionalDatabase("name_change")
+    db = FunctionalSQLiteDatabase("name_change")
     db.write(deepcopy(NAME_CHANGE_DATA), process=False)
     db.metadata["dirty"] = True
     return db
@@ -39,7 +39,7 @@ def name_change():
 @pytest.fixture
 @bw2test
 def products():
-    db = MultifunctionalDatabase("products")
+    db = FunctionalSQLiteDatabase("products")
     db.write(deepcopy(PRODUCT_DATA), process=False)
     db.metadata["dirty"] = True
     return db
@@ -48,7 +48,7 @@ def products():
 @pytest.fixture
 @bw2test
 def many_products():
-    db = MultifunctionalDatabase("products")
+    db = FunctionalSQLiteDatabase("products")
     db.write(deepcopy(MANY_PRODUCTS_DATA), process=False)
     db.metadata["dirty"] = True
     return db
@@ -57,7 +57,7 @@ def many_products():
 @pytest.fixture
 @bw2test
 def errors():
-    db = MultifunctionalDatabase("errors")
+    db = FunctionalSQLiteDatabase("errors")
     db.register(default_allocation="price")
     db.write(deepcopy(ERRORS_DATA))
     return db
@@ -66,7 +66,7 @@ def errors():
 @pytest.fixture
 @bw2test
 def product_properties():
-    db = MultifunctionalDatabase("product_properties")
+    db = FunctionalSQLiteDatabase("product_properties")
     db.write(deepcopy(PP_DATA), process=False)
     db.metadata["dirty"] = True
     return db
@@ -75,7 +75,7 @@ def product_properties():
 @pytest.fixture
 @bw2test
 def internal():
-    db = MultifunctionalDatabase("internal")
+    db = FunctionalSQLiteDatabase("internal")
     db.register(default_allocation="price")
     db.write(
         allocation_before_writing(deepcopy(INTERNAL_LINKING_DATA), "price"),

@@ -1,100 +1,83 @@
 import bw2data as bd
+import pytest
 from bw2data.tests import bw2test
 
-from multifunctional import MultifunctionalDatabase
+from multifunctional import FunctionalSQLiteDatabase
 from multifunctional.allocation import generic_allocation
-from multifunctional.node_classes import (
-    MaybeMultifunctionalProcess,
-    ReadOnlyProcessWithReferenceProduct,
-)
+from multifunctional.node_classes import Process, Function, ReadOnlyProcess
 
 
 def check_basic_allocation_results(factor_1, factor_2, database):
     nodes = sorted(database, key=lambda x: (x["name"], x.get("reference product", "")))
+    functions = list(filter(lambda x: isinstance(x, Function), nodes))
+    allocated = list(filter(lambda x: isinstance(x, ReadOnlyProcess), nodes))
 
-    assert isinstance(nodes[0], MaybeMultifunctionalProcess)
-    assert nodes[0]["name"] == "flow - a"
-    assert not list(nodes[0].exchanges())
-    assert len(nodes) == 4
-    assert not nodes[0].multifunctional
-
-    assert isinstance(nodes[1], MaybeMultifunctionalProcess)
-    assert nodes[1].multifunctional
-    assert "reference product" not in nodes[1]
-    assert "mf_parent_key" not in nodes[1]
+    # === Checking allocated process 1 ===
+    # == Process values ==
     expected = {
-        "name": "process - 1",
-        "type": "multifunctional",
-    }
-    for key, value in expected.items():
-        assert nodes[1][key] == value
-
-    assert isinstance(nodes[2], ReadOnlyProcessWithReferenceProduct)
-    expected = {
-        "name": "process - 1",
-        "reference product": "first product - 1",
-        "unit": "kg",
-        "mf_parent_key": nodes[1].key,
+        "name": "process - 1 ~ product - 1",
+        "code": "2-allocated",
+        "full_process_key": nodes[1].key,
         "type": "readonly_process",
     }
     for key, value in expected.items():
-        assert nodes[2][key] == value
+        assert allocated[0][key] == value
 
+    # == Production exchange ==
     expected = {
-        "input": ("basic", "my favorite code"),
-        "output": ("basic", "my favorite code"),
+        "input": functions[0].key,
+        "output": allocated[0].key,
         "amount": 4,
         "type": "production",
-        "functional": True,
     }
-    production = list(nodes[2].production())
+    production = list(allocated[0].production())
     assert len(production) == 1
     for key, value in expected.items():
         assert production[0][key] == value
 
+    # == Biosphere exchange ==
     expected = {
         "input": nodes[0].key,
-        "output": ("basic", "my favorite code"),
+        "output": allocated[0].key,
         "amount": factor_1,
         "type": "biosphere",
     }
-    biosphere = list(nodes[2].biosphere())
+    biosphere = list(allocated[0].biosphere())
     assert len(biosphere) == 1
     for key, value in expected.items():
         assert biosphere[0][key] == value
 
     assert not biosphere[0].get("functional")
 
-    assert isinstance(nodes[3], ReadOnlyProcessWithReferenceProduct)
+    # === Checking allocated process 2 ===
+    # == Process values ==
     expected = {
-        "name": "process - 1",
-        "reference product": "second product - 1",
-        "unit": "megajoule",
-        "mf_parent_key": nodes[1].key,
+        "name": "process - 1 ~ product - 2",
+        "code": "3-allocated",
+        "full_process_key": nodes[1].key,
         "type": "readonly_process",
     }
     for key, value in expected.items():
-        assert nodes[3][key] == value
+        assert allocated[1][key] == value
 
     expected = {
-        "input": nodes[3].key,
-        "output": nodes[3].key,
+        "input": functions[1].key,
+        "output": allocated[1].key,
         "amount": 6,
         "type": "production",
-        "functional": True,
     }
-    production = list(nodes[3].production())
+    production = list(allocated[1].production())
     assert len(production) == 1
     for key, value in expected.items():
         assert production[0][key] == value
 
     expected = {
         "input": nodes[0].key,
-        "output": nodes[3].key,
+        "output": allocated[1].key,
         "amount": factor_2,
         "type": "biosphere",
     }
-    biosphere = list(nodes[3].biosphere())
+    biosphere = list(allocated[1].biosphere())
     assert len(biosphere) == 1
     for key, value in expected.items():
         assert biosphere[0][key] == value
@@ -104,14 +87,14 @@ def check_basic_allocation_results(factor_1, factor_2, database):
 
 def test_without_allocation(basic):
     nodes = sorted(basic, key=lambda x: (x["name"], x.get("reference product", "")))
-    assert len(nodes) == 2
+    assert len(nodes) == 4
 
-    assert isinstance(nodes[0], MaybeMultifunctionalProcess)
+    assert isinstance(nodes[0], Process)
     assert nodes[0]["name"] == "flow - a"
     assert not list(nodes[0].exchanges())
     assert not nodes[0].multifunctional
 
-    assert isinstance(nodes[1], MaybeMultifunctionalProcess)
+    assert isinstance(nodes[1], Process)
     assert nodes[1].multifunctional
     assert "reference product" not in nodes[1]
     assert "mf_parent_key" not in nodes[1]
@@ -122,16 +105,27 @@ def test_without_allocation(basic):
     for key, value in expected.items():
         assert nodes[1][key] == value
 
+    assert isinstance(nodes[2], Function)
+    assert not nodes[2].multifunctional
+    assert nodes[2].processor.key == nodes[1].key
+    expected = {
+        "name": "product - 1",
+        "type": "product",
+        "processor": nodes[1].key,
+    }
+    for key, value in expected.items():
+        assert nodes[2][key] == value
 
-def test_price_allocation_strategy_label(basic):
-    basic.metadata["default_allocation"] = "price"
-    bd.get_node(code="1").allocate()
-    nodes = sorted(basic, key=lambda x: (x["name"], x.get("reference product", "")))
-
-    assert not nodes[0].get("mf_strategy_label")
-    assert nodes[1].get("mf_strategy_label") == "property allocation by 'price'"
-    assert nodes[2].get("mf_strategy_label") == "property allocation by 'price'"
-    assert nodes[3].get("mf_strategy_label") == "property allocation by 'price'"
+    assert isinstance(nodes[3], Function)
+    assert not nodes[3].multifunctional
+    assert nodes[3].processor.key == nodes[1].key
+    expected = {
+        "name": "product - 2",
+        "type": "product",
+        "processor": nodes[1].key,
+    }
+    for key, value in expected.items():
+        assert nodes[3][key] == value
 
 
 def test_price_allocation(basic):
@@ -175,7 +169,8 @@ def test_allocation_already_allocated(basic):
     bd.get_node(code="1").allocate()
     node = sorted(basic, key=lambda x: (x["name"], x.get("reference product", "")))[2]
 
-    assert generic_allocation(node, None) == []
+    with pytest.raises(ValueError):
+        generic_allocation(node, None)
 
 
 def test_allocation_not_multifunctional(basic):
@@ -199,29 +194,14 @@ def test_allocation_zero_factor_still_gives_process():
             "type": "multifunctional",
             "exchanges": [
                 {
-                    "functional": True,
                     "type": "production",
-                    "desired_code": "my favorite code",
-                    "name": "first product - 1",
-                    "unit": "kg",
                     "amount": 4,
-                    "properties": {
-                        "price": 7,
-                        "mass": 6,
-                        "manual_allocation": 2,
-                    },
+                    "input": ("basic", "2")
                 },
                 {
-                    "functional": True,
                     "type": "production",
-                    "name": "second product - 1",
-                    "unit": "megajoule",
                     "amount": 6,
-                    "properties": {
-                        "price": 0,
-                        "mass": 4,
-                        "manual_allocation": 8,
-                    },
+                    "input": ("basic", "3")
                 },
                 {
                     "type": "biosphere",
@@ -231,9 +211,33 @@ def test_allocation_zero_factor_still_gives_process():
                 },
             ],
         },
+        ("basic", "2"): {
+            "name": "product - 1",
+            "code": "2",
+            "location": "first",
+            "type": "product",
+            "unit": "kg",
+            "properties": {
+                "price": 7,
+                "mass": 6,
+                "manual_allocation": 2,
+            },
+        },
+        ("basic", "3"): {
+            "name": "product - 2",
+            "code": "3",
+            "location": "first",
+            "type": "product",
+            "unit": "megajoule",
+            "properties": {
+                "price": 0,
+                "mass": 4,
+                "manual_allocation": 8,
+            },
+        },
     }
 
-    db = MultifunctionalDatabase("basic")
+    db = FunctionalSQLiteDatabase("basic")
     db.register(default_allocation="price")
     db.write(DATA)
 
@@ -242,29 +246,9 @@ def test_allocation_zero_factor_still_gives_process():
         for exc in node.edges():
             print("\t", exc)
 
-    assert bd.get_node(name="process - 1", unit="megajoule")
+    assert bd.get_node(key=("basic", "3-allocated"))
     assert (bd.get_node(name="flow - a"), 0) in [
         (exc.input, exc["amount"])
-        for exc in bd.get_node(name="process - 1", unit="megajoule").edges()
+        for exc in bd.get_node(key=("basic", "3-allocated")).edges()
     ]
 
-
-def test_name_replacement_mfp(name_change):
-    name_change.metadata["default_allocation"] = "price"
-    bd.get_node(code="1").allocate()
-    assert {ds["name"] for ds in name_change} == {
-        "flow - a",
-        "MFP: Longer name because like⧺Long name look here wut",
-        "Longer name because like reasons (read-only process)",
-        "Long name look here wut, wut (read-only process)",
-    }
-
-
-def test_name_replacement_not_mfp(name_change):
-    name_change.metadata["default_allocation"] = "price"
-
-    node = bd.get_node(code="1")
-    node['name'] = "Replace me"
-    node.save()
-    node.allocate()
-    assert sorted(ds["name"] for ds in name_change) == ["Replace me"] * 3 + ["flow - a"]

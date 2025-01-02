@@ -5,7 +5,7 @@ import multifunctional as mf
 
 def test_basic_setup(basic):
     flow = bd.get_node(code="a")
-    assert isinstance(basic, mf.MultifunctionalDatabase)
+    assert isinstance(basic, mf.FunctionalSQLiteDatabase)
     assert isinstance(flow, mf.MaybeMultifunctionalProcess)
 
     process = bd.get_node(code="1")

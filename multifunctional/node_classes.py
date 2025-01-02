@@ -143,10 +143,16 @@ class Function(MFActivity):
     @property
     def processor(self) -> Process | None:
         """Return the single process with the production/reduction flow"""
+        if key := self.get("processor"):
+            return get_node(key=key)
+
         edge = self.processing_edge
         if not edge:
             return None
-        return edge.output
+
+        processor = edge.output
+        self["processor"] = processor.key
+        return processor
 
     def substitute(self):
         """Can I think of a way to substitute here?"""
@@ -162,7 +168,7 @@ class Function(MFActivity):
         else:
             _, errors = super().valid(why=True)
 
-        if not self.get("processor"):
+        if not self.get("processor") and not self.processor:
             errors.append("Missing field ``processor``")
         elif not isinstance(self["processor"], tuple):
             errors.append("Field ``processor`` must be a tuple")

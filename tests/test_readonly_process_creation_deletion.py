@@ -1,12 +1,9 @@
 import bw2data as bd
 from bw2data.tests import bw2test
 
-from multifunctional import MultifunctionalDatabase
+from multifunctional import FunctionalSQLiteDatabase
 from multifunctional.allocation import generic_allocation
-from multifunctional.node_classes import (
-    MaybeMultifunctionalProcess,
-    ReadOnlyProcessWithReferenceProduct,
-)
+from multifunctional.node_classes import Process, Function
 
 
 def test_allocation_creates_readonly_nodes(products):

@@ -13,29 +13,14 @@ DATA = {
         "type": "multifunctional",
         "exchanges": [
             {
-                "functional": True,
                 "type": "production",
-                "desired_code": "my favorite code",
-                "name": "first product - 1",
-                "unit": "kg",
                 "amount": 4,
-                "properties": {
-                    "price": 7,
-                    "mass": 6,
-                    "manual_allocation": 2,
-                },
+                "input": ("basic", "2")
             },
             {
-                "functional": True,
                 "type": "production",
-                "name": "second product - 1",
-                "unit": "megajoule",
                 "amount": 6,
-                "properties": {
-                    "price": 12,
-                    "mass": 4,
-                    "manual_allocation": 8,
-                },
+                "input": ("basic", "3")
             },
             {
                 "type": "biosphere",
@@ -45,4 +30,28 @@ DATA = {
             },
         ],
     },
+    ("basic", "2"): {
+            "name": "product - 1",
+            "code": "2",
+            "location": "first",
+            "type": "product",
+            "unit": "kg",
+            "properties": {
+                "price": 7,
+                "mass": 6,
+                "manual_allocation": 2,
+            },
+        },
+    ("basic", "3"): {
+            "name": "product - 2",
+            "code": "3",
+            "location": "first",
+            "type": "product",
+            "unit": "megajoule",
+            "properties": {
+                "price": 12,
+                "mass": 4,
+                "manual_allocation": 8,
+            },
+        },
 }

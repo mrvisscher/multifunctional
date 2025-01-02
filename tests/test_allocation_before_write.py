@@ -3,12 +3,13 @@ import pytest
 from bw2data.tests import bw2test
 
 import multifunctional as mf
+from multifunctional.node_classes import Process, Function, ReadOnlyProcess
 
 
 @pytest.fixture
 @bw2test
 def allocate_then_write(basic_data):
-    db = mf.MultifunctionalDatabase("basic")
+    db = mf.FunctionalSQLiteDatabase("basic")
     db.register(default_allocation="price")
     db.write(mf.allocation_before_writing(basic_data, "price"), process=False)
     db.process(allocate=False)
@@ -17,89 +18,75 @@ def allocate_then_write(basic_data):
 
 def check_basic_allocation_results(factor_1, factor_2, database):
     nodes = sorted(database, key=lambda x: (x["name"], x.get("reference product", "")))
+    functions = list(filter(lambda x: isinstance(x, Function), nodes))
+    allocated = list(filter(lambda x: isinstance(x, ReadOnlyProcess), nodes))
 
-    assert isinstance(nodes[0], mf.MaybeMultifunctionalProcess)
-    assert nodes[0]["name"] == "flow - a"
-    assert not list(nodes[0].exchanges())
-    assert len(nodes) == 4
-
-    assert isinstance(nodes[1], mf.MaybeMultifunctionalProcess)
-    assert nodes[1].multifunctional
-    assert "reference product" not in nodes[1]
-    assert "mf_parent_key" not in nodes[1]
+    # === Checking allocated process 1 ===
+    # == Process values ==
     expected = {
-        "name": "process - 1",
-        "type": "multifunctional",
-    }
-    for key, value in expected.items():
-        assert nodes[1][key] == value
-
-    assert isinstance(nodes[2], mf.ReadOnlyProcessWithReferenceProduct)
-    expected = {
-        "name": "process - 1",
-        "reference product": "first product - 1",
-        "unit": "kg",
-        "mf_parent_key": nodes[1].key,
+        "name": "process - 1 ~ product - 1",
+        "code": "2-allocated",
+        "full_process_key": nodes[1].key,
         "type": "readonly_process",
     }
     for key, value in expected.items():
-        assert nodes[2][key] == value
+        assert allocated[0][key] == value
 
+    # == Production exchange ==
     expected = {
-        "input": ("basic", "my favorite code"),
-        "output": ("basic", "my favorite code"),
+        "input": functions[0].key,
+        "output": allocated[0].key,
         "amount": 4,
         "type": "production",
-        "functional": True,
     }
-    production = list(nodes[2].production())
+    production = list(allocated[0].production())
     assert len(production) == 1
     for key, value in expected.items():
         assert production[0][key] == value
 
+    # == Biosphere exchange ==
     expected = {
         "input": nodes[0].key,
-        "output": ("basic", "my favorite code"),
+        "output": allocated[0].key,
         "amount": factor_1,
         "type": "biosphere",
     }
-    biosphere = list(nodes[2].biosphere())
+    biosphere = list(allocated[0].biosphere())
     assert len(biosphere) == 1
     for key, value in expected.items():
         assert biosphere[0][key] == value
 
     assert not biosphere[0].get("functional")
 
-    assert isinstance(nodes[3], mf.ReadOnlyProcessWithReferenceProduct)
+    # === Checking allocated process 2 ===
+    # == Process values ==
     expected = {
-        "name": "process - 1",
-        "reference product": "second product - 1",
-        "unit": "megajoule",
-        "mf_parent_key": nodes[1].key,
+        "name": "process - 1 ~ product - 2",
+        "code": "3-allocated",
+        "full_process_key": nodes[1].key,
         "type": "readonly_process",
     }
     for key, value in expected.items():
-        assert nodes[3][key] == value
+        assert allocated[1][key] == value
 
     expected = {
-        "input": nodes[3].key,
-        "output": nodes[3].key,
+        "input": functions[1].key,
+        "output": allocated[1].key,
         "amount": 6,
         "type": "production",
-        "functional": True,
     }
-    production = list(nodes[3].production())
+    production = list(allocated[1].production())
     assert len(production) == 1
     for key, value in expected.items():
         assert production[0][key] == value
 
     expected = {
         "input": nodes[0].key,
-        "output": nodes[3].key,
+        "output": allocated[1].key,
         "amount": factor_2,
         "type": "biosphere",
     }
-    biosphere = list(nodes[3].biosphere())
+    biosphere = list(allocated[1].biosphere())
     assert len(biosphere) == 1
     for key, value in expected.items():
         assert biosphere[0][key] == value
@@ -111,11 +98,11 @@ def test_without_allocation(allocate_then_write):
     nodes = sorted(allocate_then_write, key=lambda x: (x["name"], x.get("reference product", "")))
     assert len(nodes) == 4
 
-    assert isinstance(nodes[0], mf.MaybeMultifunctionalProcess)
+    assert isinstance(nodes[0], Process)
     assert nodes[0]["name"] == "flow - a"
     assert not list(nodes[0].exchanges())
 
-    assert isinstance(nodes[1], mf.MaybeMultifunctionalProcess)
+    assert isinstance(nodes[1], Process)
     assert nodes[1].multifunctional
     assert "reference product" not in nodes[1]
     assert "mf_parent_key" not in nodes[1]
@@ -125,17 +112,6 @@ def test_without_allocation(allocate_then_write):
     }
     for key, value in expected.items():
         assert nodes[1][key] == value
-
-
-def test_price_allocation_strategy_label(allocate_then_write):
-    allocate_then_write.metadata["default_allocation"] = "price"
-    bd.get_node(code="1").allocate()
-    nodes = sorted(allocate_then_write, key=lambda x: (x["name"], x.get("reference product", "")))
-
-    assert not nodes[0].get("mf_strategy_label")
-    assert nodes[1].get("mf_strategy_label") == "property allocation by 'price'"
-    assert nodes[2].get("mf_strategy_label") == "property allocation by 'price'"
-    assert nodes[3].get("mf_strategy_label") == "property allocation by 'price'"
 
 
 def test_price_allocation(allocate_then_write):
@@ -175,7 +151,8 @@ def test_allocation_already_allocated(allocate_then_write):
     bd.get_node(code="1").allocate()
     node = sorted(allocate_then_write, key=lambda x: (x["name"], x.get("reference product", "")))[2]
 
-    assert mf.generic_allocation(node, None) == []
+    with pytest.raises(ValueError):
+        mf.generic_allocation(node, None)
 
 
 def test_allocation_not_multifunctional(allocate_then_write):

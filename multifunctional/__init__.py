@@ -14,7 +14,7 @@ __all__ = (
     "ReadOnlyProcess",
 )
 
-__version__ = "1.0"
+__version__ = "0.1"
 
 # # Follows guidance from https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
 # # For development or to get more detail on what is really happening, re-enable with:

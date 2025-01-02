@@ -1,10 +1,7 @@
 import bw2data as bd
 
 from multifunctional.allocation import generic_allocation
-from multifunctional.node_classes import (
-    MaybeMultifunctionalProcess,
-    ReadOnlyProcessWithReferenceProduct,
-)
+from multifunctional.node_classes import Process, Function
 
 
 def check_products_allocation_results(factor_1, factor_2, database):

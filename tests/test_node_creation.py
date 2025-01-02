@@ -1,12 +1,12 @@
 import bw2data as bd
 from bw2data.tests import bw2test
 
-from multifunctional import MultifunctionalDatabase
+from multifunctional import FunctionalSQLiteDatabase
 
 
 @bw2test
 def test_node_creation():
-    db = MultifunctionalDatabase("test database")
+    db = FunctionalSQLiteDatabase("test database")
     db.register(default_allocation="price")
 
     node = db.new_node()
@@ -23,7 +23,7 @@ def test_node_creation():
 
 @bw2test
 def test_node_creation_default_label():
-    db = MultifunctionalDatabase("test database")
+    db = FunctionalSQLiteDatabase("test database")
     db.register(default_allocation="price")
 
     node = db.new_node()
@@ -39,7 +39,7 @@ def test_node_creation_default_label():
 
 @bw2test
 def test_node_creation_multifunctional():
-    db = MultifunctionalDatabase("test database")
+    db = FunctionalSQLiteDatabase("test database")
     db.register(default_allocation="price")
 
     node = db.new_node()

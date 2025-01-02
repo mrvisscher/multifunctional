@@ -3,12 +3,13 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "multifunctional"
+name = "brightway-functional"
 authors = [
-  { name="Chris Mutel", email="cmutel@gmail.com" }
+  { name="Chris Mutel", email="cmutel@gmail.com" },
+  { name="Marin Visscher", email="m.r.visscher@cml.leidenuniv.nl" }
 ]
 maintainers = [
-  { name="Chris Mutel", email="cmutel@gmail.com" }
+  { name="Marin Visscher", email="m.r.visscher@cml.leidenuniv.nl" }
 ]
 description = "Code for handling multifunctional activities in Brightway"
 readme = "README.md"

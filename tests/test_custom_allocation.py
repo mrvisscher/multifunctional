@@ -5,7 +5,7 @@ from bw2data import get_node, projects
 from bw2data.tests import bw2test
 
 from multifunctional import (
-    MultifunctionalDatabase,
+    FunctionalSQLiteDatabase,
     add_custom_property_allocation_to_project,
     allocation_strategies,
     check_property_for_allocation,
@@ -150,7 +150,7 @@ def test_check_property_for_allocation_failure_boolean():
             ],
         },
     }
-    db = MultifunctionalDatabase("errors")
+    db = FunctionalSQLiteDatabase("errors")
     db.register(default_allocation="price")
     db.write(DATA)
 
