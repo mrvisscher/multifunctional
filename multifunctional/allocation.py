@@ -78,13 +78,13 @@ def generic_allocation(
 def get_allocation_factor_from_property(
     function: Function,
     property_label: str,
-    normalize_by_amount: bool = True,
+    normalize_by_production_amount: bool = True,
 ) -> float:
     if not function.get("properties"):
         raise KeyError(f"Function {function} from process {function.processor} doesn't have properties")
 
     try:
-        if normalize_by_amount:
+        if normalize_by_production_amount:
             return function.processing_edge["amount"] * function["properties"][property_label]
         else:
             return function["properties"][property_label]
@@ -92,11 +92,11 @@ def get_allocation_factor_from_property(
         raise KeyError(f"Function {function} from {function.processor} missing property {property_label}") from e
 
 
-def property_allocation(property_label: str, normalize_by_amount: bool = True) -> Callable:
+def property_allocation(property_label: str, normalize_by_production_amount: bool = True) -> Callable:
     getter = partial(
         get_allocation_factor_from_property,
         property_label=property_label,
-        normalize_by_amount=normalize_by_amount
+        normalize_by_production_amount=normalize_by_production_amount
     )
 
     return partial(generic_allocation, getter=getter)
@@ -105,7 +105,7 @@ def property_allocation(property_label: str, normalize_by_amount: bool = True) -
 allocation_strategies = {
     "price": property_allocation("price"),
     "manual_allocation": property_allocation(
-        "manual_allocation", normalize_by_amount=False
+        "manual_allocation", normalize_by_production_amount=False
     ),
     "mass": property_allocation("mass"),
     "equal": partial(generic_allocation, getter=lambda x: 1.0),

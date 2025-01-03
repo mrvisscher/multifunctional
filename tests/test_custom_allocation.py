@@ -1,6 +1,7 @@
 import logging
 from typing import Callable
 
+import pytest
 from bw2data import get_node, projects
 from bw2data.tests import bw2test
 
@@ -82,10 +83,8 @@ def test_check_process_property_for_allocation_failure(errors):
 
 
 def test_check_process_property_for_allocation_failure_process_type(errors):
-    msg_list = []
-    result = check_property_for_process_allocation(get_node(code="a"), "mass", msg_list)
-    assert result is True
-    assert not msg_list
+    with pytest.raises(TypeError):
+        process_property_errors(get_node(code="a"), "mass")
 
 
 @bw2test
@@ -129,11 +128,11 @@ def test_check_property_for_allocation_failure_boolean():
     db.register(default_allocation="price")
     db.write(DATA)
 
-    result = check_property_for_allocation("errors", "mass")
+    result = database_property_errors("errors", "mass")
     print(result)
     expected = (
         logging.CRITICAL,
-        MessageType.NONNUMERIC_PRODUCT_PROPERTY,
+        MessageType.NONNUMERIC_FUNCTION_PROPERTY,
         get_node(code="b").id,
         get_node(code="1").id,
     )
@@ -141,7 +140,7 @@ def test_check_property_for_allocation_failure_boolean():
     assert (
         result[0].level,
         result[0].message_type,
-        result[0].product_id,
+        result[0].function_id,
         result[0].process_id,
     ) == expected
 
@@ -149,46 +148,40 @@ def test_check_property_for_allocation_failure_boolean():
 def test_list_available_properties_basic(basic):
     basic.metadata["default_allocation"] = "price"
     basic.process()
-    expected = [
-        ("price", MessageType.ALL_VALID),
-        ("mass", MessageType.ALL_VALID),
-        ("manual_allocation", MessageType.ALL_VALID),
-    ]
-    for obj in list_available_properties("basic"):
-        assert obj in expected
+    expected = {
+        "price": MessageType.ALL_VALID,
+        "mass": MessageType.ALL_VALID,
+        "manual_allocation": MessageType.ALL_VALID,
+    }
+    for label, validity in list_available_properties("basic").items():
+        assert expected[label] == validity
 
 
 def test_list_available_properties_errors(errors):
-    expected = [
-        ("price", MessageType.ALL_VALID),
-        ("mass", MessageType.NONNUMERIC_PROPERTY),
-    ]
-    for obj in list_available_properties("errors"):
-        assert obj in expected
+    expected = {
+        "price": MessageType.ALL_VALID,
+        "mass": MessageType.NONNUMERIC_PROPERTY,
+    }
+    for label, validity in list_available_properties("errors").items():
+        assert expected[label] == validity
 
 
 def test_list_available_properties_for_process_basic(basic):
     basic.metadata["default_allocation"] = "price"
     basic.process()
-    expected = [
-        ("price", MessageType.ALL_VALID),
-        ("mass", MessageType.ALL_VALID),
-        ("manual_allocation", MessageType.ALL_VALID),
-    ]
-    for obj in list_available_properties("basic", get_node(code="1")):
-        assert obj in expected
+    expected = {
+        "price": MessageType.ALL_VALID,
+        "mass": MessageType.ALL_VALID,
+        "manual_allocation": MessageType.ALL_VALID,
+    }
+    for label, validity in list_available_properties("basic", get_node(code="1")).items():
+        assert expected[label] == validity
 
 
 def test_list_available_properties_for_process_errors(errors):
-    expected_1 = [
-        ("price", MessageType.ALL_VALID),
-        ("mass", MessageType.NONNUMERIC_PROPERTY),
-    ]
-    for obj in list_available_properties("errors", get_node(code="1")):
-        assert obj in expected_1
-    expected_3 = [
-        ("price", MessageType.ALL_VALID),
-        ("mass", MessageType.ALL_VALID),
-    ]
-    for obj in list_available_properties("errors", get_node(code="3")):
-        assert obj in expected_3
+    expected_1 = {
+        "price": MessageType.ALL_VALID,
+        "mass": MessageType.NONNUMERIC_PROPERTY,
+    }
+    for label, validity in list_available_properties("errors", get_node(code="1")).items():
+        assert expected_1[label] == validity
