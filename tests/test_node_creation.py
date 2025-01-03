@@ -11,18 +11,17 @@ def test_node_creation():
 
     node = db.new_node()
     node["name"] = "foo"
-    node["type"] = "product"
     node.save()
 
     for node in db:
         assert node["name"] == "foo"
         assert node["database"] == "test database"
         assert node["code"]
-        assert node["type"] == "product"
+        assert node["type"] == "nonfunctional"
 
 
 @bw2test
-def test_node_creation_default_label():
+def test_node_creation_functional():
     db = FunctionalSQLiteDatabase("test database")
     db.register(default_allocation="price")
 
@@ -30,11 +29,13 @@ def test_node_creation_default_label():
     node["name"] = "foo"
     node.save()
 
-    for node in db:
-        assert node["name"] == "foo"
-        assert node["database"] == "test database"
-        assert node["code"]
-        assert node["type"] == bd.labels.chimaera_node_default
+    node.new_product(name="bar", code="bar").save()
+
+    node = bd.get_node(key=node.key)  # reload node
+    assert node["name"] == "foo"
+    assert node["database"] == "test database"
+    assert node["code"]
+    assert node["type"] == "process"
 
 
 @bw2test
@@ -44,13 +45,13 @@ def test_node_creation_multifunctional():
 
     node = db.new_node()
     node["name"] = "foo"
-    node["unit"] = "bar"
-    node.new_edge(input=node, functional=True, amount=0.1, type="technosphere").save()
-    node.new_edge(input=node, functional=True, amount=1.0, type="production").save()
     node.save()
 
-    for node in db:
-        assert node["name"] == "foo"
-        assert node["database"] == "test database"
-        assert node["code"]
-        assert node["type"] == "multifunctional"
+    node.new_product(name="bar", code="bar").save()
+    node.new_product(name="zas", code="zas").save()
+
+    node = bd.get_node(key=node.key)  # reload node
+    assert node["name"] == "foo"
+    assert node["database"] == "test database"
+    assert node["code"]
+    assert node["type"] == "multifunctional"

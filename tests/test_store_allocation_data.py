@@ -10,12 +10,11 @@ def test_allocation_labels_applied_price(basic):
 
     n = bd.get_node(code="1")
 
-    for exc in n.production():
-        if exc["name"] == "first product - 1":
-            assert exc["mf_allocation_factor"] == 0.28
-        elif exc["name"] == "second product - 2":
-            assert exc["mf_allocation_factor"] == 0.72
-    assert n["mf_strategy_label"] == "property allocation by 'price'"
+    for function in n.functions():
+        if function["name"] == "first product - 1":
+            assert function["mf_allocation_factor"] == 0.28
+        elif function["name"] == "second product - 2":
+            assert function["mf_allocation_factor"] == 0.72
 
 
 def test_allocation_labels_applied_manual(basic):
@@ -27,12 +26,11 @@ def test_allocation_labels_applied_manual(basic):
 
     n = bd.get_node(code="1")
 
-    for exc in n.production():
-        if exc["name"] == "first product - 1":
-            assert exc["mf_allocation_factor"] == 0.2
-        elif exc["name"] == "second product - 2":
-            assert exc["mf_allocation_factor"] == 0.8
-    assert n["mf_strategy_label"] == "property allocation by 'manual_allocation'"
+    for function in n.functions():
+        if function["name"] == "first product - 1":
+            assert function["mf_allocation_factor"] == 0.2
+        elif function["name"] == "second product - 2":
+            assert function["mf_allocation_factor"] == 0.8
 
 
 def test_allocation_labels_applied_equal(basic):
@@ -44,9 +42,8 @@ def test_allocation_labels_applied_equal(basic):
 
     n = bd.get_node(code="1")
 
-    for exc in n.production():
-        if exc["name"] == "first product - 1":
-            assert exc["mf_allocation_factor"] == 0.5
-        elif exc["name"] == "second product - 2":
-            assert exc["mf_allocation_factor"] == 0.5
-    assert n["mf_strategy_label"] == "equal_allocation"
+    for function in n.functions():
+        if function["name"] == "first product - 1":
+            assert function["mf_allocation_factor"] == 0.5
+        elif function["name"] == "second product - 2":
+            assert function["mf_allocation_factor"] == 0.5

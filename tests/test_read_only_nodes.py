@@ -8,7 +8,7 @@ def test_read_only_node(basic):
     basic.metadata["default_allocation"] = "mass"
     bd.get_node(code="1").allocate()
     node = sorted(basic, key=lambda x: (x["name"], x.get("reference product", "")))[2]
-    assert isinstance(node, mf.ReadOnlyProcessWithReferenceProduct)
+    assert isinstance(node, mf.ReadOnlyProcess)
 
     with pytest.raises(NotImplementedError) as info:
         node.copy()
@@ -31,7 +31,7 @@ def test_read_only_exchanges(basic):
     basic.metadata["default_allocation"] = "mass"
     bd.get_node(code="1").allocate()
     node = sorted(basic, key=lambda x: (x["name"], x.get("reference product", "")))[2]
-    assert isinstance(node, mf.ReadOnlyProcessWithReferenceProduct)
+    assert isinstance(node, mf.ReadOnlyProcess)
 
     for exc in node.exchanges():
         with pytest.raises(NotImplementedError) as info:
@@ -55,7 +55,7 @@ def test_read_only_parent(basic):
     basic.metadata["default_allocation"] = "mass"
     parent = bd.get_node(code="1")
     parent.allocate()
-    node = bd.get_node(unit="kg", name="process - 1", type="readonly_process")
+    node = bd.get_node(code="2-allocated")
     assert node.parent == parent
 
 
@@ -63,8 +63,8 @@ def test_need_parent_id(basic):
     basic.metadata["default_allocation"] = "mass"
     parent = bd.get_node(code="1")
     parent.allocate()
-    node = sorted(basic, key=lambda x: (x["name"], x.get("reference product", "")))[2]
-    node._data.pop("mf_parent_key")
+    node = bd.get_node(code="2-allocated")
+    node._data.pop("full_process_key")
     with pytest.raises(ValueError) as info:
         node.save()
-    assert "mf_parent_key" in info.value.args[0]
+    assert "full_process_key" in info.value.args[0]

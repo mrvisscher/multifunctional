@@ -196,12 +196,11 @@ class Function(MFActivity):
 
         processor = get_node(key=self.get("processor"))
 
-        if self.processor and processor.key == self.processor.key:
-            return  # no new edges needed
-
-        if self.processor and processor.key != self.processor.key:
+        if edge := self.processing_edge:
+            if processor.key == edge.output.key:
+                return  # no new edges needed
             print(f"Switching processor for {self}")
-            self.upstream(["production", "reduction"]).delete()
+            edge.delete()
 
         edge_type = "production" if self["type"] == "product" else "reduction"
 
@@ -227,10 +226,7 @@ class ReadOnlyProcess(MFActivity):
     @property
     def parent(self):
         """Return the `MultifunctionalProcess` which generated this node object"""
-        return get_node(
-            database=self["mf_parent_key"][0],
-            code=self["mf_parent_key"][1],
-        )
+        return get_node(key=self.get("full_process_key"))
 
     def delete(self, signal: bool = True):
         self._edges_class = Exchanges  # makes exchanges non-readonly and ready for deletion

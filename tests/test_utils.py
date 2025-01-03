@@ -123,7 +123,7 @@ def test_update_datasets_from_allocation_results(basic):
     basic.metadata["default_allocation"] = "price"
     basic.process()
 
-    ds = bd.get_node(code="my favorite code")
+    ds = bd.get_node(code="3-allocated")
     mf = ds.parent
 
     # TODO
